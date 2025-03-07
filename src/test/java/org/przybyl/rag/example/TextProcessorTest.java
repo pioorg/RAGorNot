@@ -5,37 +5,38 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.przybyl.rag.example.utils.TextSplitter;
 
 import java.util.List;
 
 class TextProcessorTest {
 
-    private TextProcessor textProcessor;
+    private TextSplitter textSplitter;
 
     @BeforeEach
     void setUp() {
-        textProcessor = new TextProcessor();
+        textSplitter = new TextSplitter();
     }
 
     @Test
     void shouldReturnEmptyListForNullInput() {
-        List<String> result = textProcessor.splitIntoPassages(null);
+        List<String> result = textSplitter.splitIntoPassages(null);
         assertTrue(result.isEmpty(), "Result should be empty for null input");
     }
 
     @Test
     void shouldReturnEmptyListForEmptyInput() {
-        List<String> result = textProcessor.splitIntoPassages("");
+        List<String> result = textSplitter.splitIntoPassages("");
         assertTrue(result.isEmpty(), "Result should be empty for empty input");
 
-        result = textProcessor.splitIntoPassages("   ");
+        result = textSplitter.splitIntoPassages("   ");
         assertTrue(result.isEmpty(), "Result should be empty for whitespace input");
     }
 
     @Test
     void shouldCreateSinglePassageForShortText() {
         String input = "This is a simple sentence. It should fit in one passage.";
-        List<String> result = textProcessor.splitIntoPassages(input);
+        List<String> result = textSplitter.splitIntoPassages(input);
 
         assertEquals(1, result.size(), "Should create exactly one passage");
         assertEquals(input, result.getFirst(), "Passage content should match input");
@@ -50,7 +51,7 @@ class TextProcessorTest {
             if (i % 10 == 0) longText.append(". ");
         }
 
-        List<String> result = textProcessor.splitIntoPassages(longText.toString());
+        List<String> result = textSplitter.splitIntoPassages(longText.toString());
 
         assertTrue(result.size() > 1, "Should create multiple passages");
         for (String passage : result) {
@@ -62,7 +63,7 @@ class TextProcessorTest {
     @Test
     void shouldHandleSpecialCharacters() {
         String input = "This sentence has special chars: @#$%^&*()! Next sentence has numbers: 12345.";
-        List<String> result = textProcessor.splitIntoPassages(input);
+        List<String> result = textSplitter.splitIntoPassages(input);
 
         assertEquals(1, result.size(), "Should create exactly one passage");
         assertEquals(input, result.getFirst(), "Passage should preserve special characters");
@@ -71,7 +72,7 @@ class TextProcessorTest {
     @Test
     void shouldPreserveSentenceBoundaries() {
         String input = "First sentence. Second sentence. Third sentence.";
-        List<String> result = textProcessor.splitIntoPassages(input);
+        List<String> result = textSplitter.splitIntoPassages(input);
 
         assertEquals(1, result.size(), "Should create exactly one passage");
         assertEquals(input, result.getFirst(), "Should preserve sentence boundaries");
@@ -86,7 +87,7 @@ class TextProcessorTest {
         }
         longSentence.append(".");
 
-        List<String> result = textProcessor.splitIntoPassages(longSentence.toString());
+        List<String> result = textSplitter.splitIntoPassages(longSentence.toString());
 
         assertFalse(result.isEmpty(), "Should handle long single sentence");
         assertTrue(result.getFirst().endsWith("."), "Should preserve sentence ending");
@@ -103,7 +104,7 @@ class TextProcessorTest {
 
             And finally, we conclude with a medium-length sentence that contains enough words to make it interesting but not too long to break any limits.""";
 
-        List<String> result = textProcessor.splitIntoPassages(input);
+        List<String> result = textSplitter.splitIntoPassages(input);
 
         assertFalse(result.isEmpty(), "Should create at least one passage");
         for (String passage : result) {

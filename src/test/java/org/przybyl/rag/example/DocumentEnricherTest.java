@@ -3,6 +3,7 @@ package org.przybyl.rag.example;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import static org.junit.jupiter.api.Assertions.*;
+import org.przybyl.rag.example.demos.DocumentEnricher;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;

@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.przybyl.rag.example;
+package org.przybyl.rag.example.utils;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -24,6 +24,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -37,6 +38,16 @@ public class ElasticsearchConnector {
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
 
+    public ElasticsearchConnector(ObjectMapper objectMapper, String esUrl, HttpClient httpClient) {
+        this.esUrl = esUrl;
+        this.httpClient = httpClient;
+        this.objectMapper = objectMapper;
+    }
+
+    public ElasticsearchConnector(ObjectMapper objectMapper, String esUrl) {
+        this(objectMapper, esUrl, HttpClient.newHttpClient());
+    }
+
     public ElasticsearchConnector(ObjectMapper objectMapper) {
         String apiKey = System.getenv("ES_APIKEY");
         if (apiKey == null) {
@@ -46,9 +57,8 @@ public class ElasticsearchConnector {
         if (esUrl == null) {
             throw new IllegalStateException("Missing required environment variable ES_URL");
         }
-        this.esUrl = esUrl;
-        this.httpClient = HttpClient.newHttpClient();
-        this.objectMapper = objectMapper;
+        this(objectMapper, esUrl, HttpClient.newHttpClient());
+
     }
 
     public void createIndex(String indexName, String mappingJson) throws IOException, InterruptedException {
@@ -63,7 +73,7 @@ public class ElasticsearchConnector {
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() != 200) {
             throw new IOException("Failed to create index. Status code: " + response.statusCode() +
-                                ", Response: " + response.body());
+                ", Response: " + response.body());
         }
     }
 
@@ -90,18 +100,22 @@ public class ElasticsearchConnector {
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() != 200) {
             throw new IOException("Failed to index documents. Status code: " + response.statusCode() +
-                                ", Response: " + response.body());
+                ", Response: " + response.body());
         }
     }
 
-    public JsonNode search(String indexName, int from, int size) throws IOException, InterruptedException {
-        String searchUrl = esUrl + "/" + indexName + "/_search";
+    public String search(String indexName, int from, int size) throws IOException, InterruptedException {
         String queryJson = String.format("""
             {
                 "query": {"match_all": {}},
                 "from": %d,
                 "size": %d
             }""", from, size);
+        return searchWithCustomQuery(indexName, queryJson);
+    }
+
+    public String searchWithCustomQuery(String indexName, String queryJson) throws IOException, InterruptedException {
+        String searchUrl = esUrl + "/" + indexName + "/_search";
 
         HttpRequest request = HttpRequest.newBuilder()
             .uri(URI.create(searchUrl))
@@ -113,13 +127,60 @@ public class ElasticsearchConnector {
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() != 200) {
             throw new IOException("Failed to search documents. Status code: " + response.statusCode() +
-                                ", Response: " + response.body());
+                ", Response: " + response.body());
         }
 
-        return objectMapper.readTree(response.body());
+        return response.body();
     }
 
     private String getAuthHeader() {
         return "ApiKey " + System.getenv("ES_APIKEY");
+    }
+
+    public String getIndexMapping(String indexName) throws IOException, InterruptedException {
+        String mappingUrl = esUrl + "/" + indexName + "/_mapping";
+        HttpRequest request = HttpRequest.newBuilder()
+            .uri(URI.create(mappingUrl))
+            .header("Authorization", getAuthHeader())
+            .GET()
+            .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200) {
+            throw new IOException("Failed to get index mapping. Status code: " + response.statusCode() +
+                ", Response: " + response.body());
+        }
+
+        return response.body();
+    }
+
+    public String mergeMapping(String sourceMapping, Map<String, String> additionalFields) throws IOException {
+        // Parse source mapping to get properties
+        JsonNode sourceMappingNode = objectMapper.readTree(sourceMapping);
+        JsonNode sourceProperties = sourceMappingNode.fields().next().getValue()
+            .path("mappings").path("properties");
+
+        // Create new mapping structure
+        Map<String, Object> properties = new HashMap<>();
+
+        // Add source properties
+        sourceProperties.fields().forEachRemaining(field -> {
+            properties.put(field.getKey(), objectMapper.convertValue(field.getValue(), Map.class));
+        });
+
+        // Add additional fields
+        additionalFields.forEach((key, value) -> {
+            try {
+                properties.put(key, objectMapper.readValue(value, Map.class));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        // Create the final structure
+        Map<String, Object> mappings = Map.of("properties", properties);
+        Map<String, Object> result = Map.of("mappings", mappings);
+
+        return objectMapper.writeValueAsString(result);
     }
 }

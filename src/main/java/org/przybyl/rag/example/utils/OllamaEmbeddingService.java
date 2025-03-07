@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.przybyl.rag.example;
+package org.przybyl.rag.example.utils;
 
 import java.io.IOException;
 import java.net.URI;
@@ -22,20 +22,31 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
-public class LocalOllamaRequestSender implements RequestSender {
+/**
+ * Implementation of EmbeddingService that uses Ollama's API to create embeddings.
+ */
+public class OllamaEmbeddingService implements EmbeddingService {
 
-    private static final String ENCODE_URL = System.getenv().getOrDefault("ENCODE_URL", "http://localhost:11434/api/embeddings");
-    private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder().build();
+    private static final String ENCODE_URL = System.getenv().getOrDefault("OLLAMA_URL", "http://localhost:11434")+"/api/embeddings";
+    private final HttpClient httpClient;
+
+    public OllamaEmbeddingService() {
+        this(HttpClient.newHttpClient());
+    }
+
+    public OllamaEmbeddingService(HttpClient httpClient) {
+        this.httpClient = httpClient;
+    }
 
     @Override
-    public String sendRequest(String requestBody) throws IOException, InterruptedException {
+    public String requestEmbedding(String requestBody) throws IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder()
             .uri(URI.create(ENCODE_URL))
             .header("Content-Type", "application/json")
             .POST(HttpRequest.BodyPublishers.ofString(requestBody))
             .build();
 
-        HttpResponse<String> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
         return response.body();
     }
 }

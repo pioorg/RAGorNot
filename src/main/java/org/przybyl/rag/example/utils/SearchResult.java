@@ -14,10 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.przybyl.rag.example;
+package org.przybyl.rag.example.utils;
 
-import java.io.IOException;
-
-public interface RequestSender {
-    String sendRequest(String requestBody) throws IOException, InterruptedException;
+public record SearchResult(
+    String id,
+    String title,
+    String url,
+    String body,
+    float score
+) {
 }

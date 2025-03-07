@@ -1,9 +1,14 @@
 package org.przybyl.rag.example;
 
-import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
-
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
+import org.przybyl.rag.example.utils.ElasticsearchConnector;
+
+import java.util.Map;
 
 class ElasticsearchConnectorTest {
 
@@ -49,5 +54,53 @@ class ElasticsearchConnectorTest {
         } finally {
             // No need to restore environment variables as they can't be modified in Java
         }
+    }
+
+    @Test
+    void shouldMergeMappingsCorrectly() throws Exception {
+        ObjectMapper objectMapper = new ObjectMapper();
+        ElasticsearchConnector connector = new ElasticsearchConnector(objectMapper, "http://dummy-url");
+
+        String sourceMapping = """
+            {
+              "test-index": {
+                "mappings": {
+                  "properties": {
+                    "title": {
+                      "type": "text"
+                    },
+                    "body": {
+                      "type": "text"
+                    }
+                  }
+                }
+              }
+            }""";
+
+        Map<String, String> additionalFields = Map.of(
+            "newField", """
+                {
+                    "type": "keyword"
+                }"""
+        );
+
+        String mergedMapping = connector.mergeMapping(
+            sourceMapping,
+            additionalFields
+        );
+
+        System.out.println("[DEBUG_LOG] Merged mapping: " + mergedMapping);
+
+        // Verify the merged mapping contains all fields
+        JsonNode merged = objectMapper.readTree(mergedMapping);
+        JsonNode properties = merged.path("mappings").path("properties");
+
+        assertTrue(properties.has("title"), "Should contain original 'title' field");
+        assertTrue(properties.has("body"), "Should contain original 'body' field");
+        assertTrue(properties.has("newField"), "Should contain new field");
+
+        assertEquals("text", properties.path("title").path("type").asText(), "Should preserve title field type");
+        assertEquals("text", properties.path("body").path("type").asText(), "Should preserve body field type");
+        assertEquals("keyword", properties.path("newField").path("type").asText(), "Should add new field with correct type");
     }
 }

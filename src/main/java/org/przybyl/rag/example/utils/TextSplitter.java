@@ -14,15 +14,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.przybyl.rag.example;
+package org.przybyl.rag.example.utils;
 
 import java.text.BreakIterator;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-public class TextProcessor {
-    private static final int MAX_WORDS_PER_PASSAGE = Integer.parseInt(System.getenv().getOrDefault("MAX_WORDS_PER_PASSAGE", "300"));
+public class TextSplitter {
+    private static final int MAX_WORDS_PER_PASSAGE =
+        Integer.parseInt(System.getenv().getOrDefault("MAX_WORDS_PER_PASSAGE", "300"));
 
     public List<String> splitIntoPassages(String text) {
         if (text == null || text.trim().isEmpty()) {

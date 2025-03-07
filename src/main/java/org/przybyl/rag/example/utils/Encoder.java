@@ -14,27 +14,39 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.przybyl.rag.example;
+package org.przybyl.rag.example.utils;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.io.IOException;
 
 public class Encoder {
 
-    private final RequestSender requestSender;
+    private final String model;
+    private final EmbeddingService embeddingService;
     private final ObjectMapper objectMapper;
 
-    public Encoder(RequestSender requestSender, ObjectMapper objectMapper) {
-        this.requestSender = requestSender;
+    public Encoder(EmbeddingService embeddingService, ObjectMapper objectMapper) {
+        this(embeddingService,
+            objectMapper,
+            System.getenv().getOrDefault("OLLAMA_EMBEDDING_MODEL", "all-minilm"));
+    }
+
+    public Encoder(EmbeddingService embeddingService, ObjectMapper objectMapper, String model) {
+        this.embeddingService = embeddingService;
         this.objectMapper = objectMapper;
+        this.model = model;
     }
 
     public double[] encode(String text) {
+        if (text == null) {
+            throw new NullPointerException("Text to encode cannot be null");
+        }
         try {
-            EncodingRequest request = new EncodingRequest("all-minilm", text);
+            EncodingRequest request = new EncodingRequest(model, text);
             String requestBody = objectMapper.writeValueAsString(request);
-            String responseBody = requestSender.sendRequest(requestBody);
+            String responseBody = embeddingService.requestEmbedding(requestBody);
             EncodingResponse response = objectMapper.readValue(responseBody, EncodingResponse.class);
             return response.embedding();
         } catch (IOException | InterruptedException e) {
@@ -45,10 +57,12 @@ public class Encoder {
     private record EncodingRequest(
         String model,
         String prompt
-    ) {}
+    ) {
+    }
 
     private record EncodingResponse(
         @JsonProperty("embedding")
         double[] embedding
-    ) {}
+    ) {
+    }
 }
