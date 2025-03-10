@@ -28,13 +28,13 @@ test_elasticsearch() {
     fi
     debug "Elasticsearch connection successful"
 
-    # Check if source index exists
-    local index_exists=$(curl -s -k -H "Authorization: ApiKey ${ES_APIKEY}" "${ES_URL}/${CRAWL_INDEX}")
+    # Check if search index exists
+    local index_exists=$(curl -s -k -H "Authorization: ApiKey ${ES_APIKEY}" "${ES_URL}/${SEARCH_INDEX}")
     if echo "$index_exists" | jq -e '.error' > /dev/null; then
-        error_log "Source index ${CRAWL_INDEX} does not exist"
+        error_log "Search index ${SEARCH_INDEX} does not exist"
         exit 1
     fi
-    debug "Source index ${CRAWL_INDEX} exists"
+    debug "Search index ${SEARCH_INDEX} exists"
 }
 
 # Test Ollama connectivity
