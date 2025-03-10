@@ -106,13 +106,20 @@ json_prompt=$(jq -n --arg prompt "$combined_prompt" '$prompt' || {
     exit 1
 })
 
-# Make the request to Ollama and process streaming response
 curl -s -N -f -X POST "${OLLAMA_URL}/api/generate" -d '{
   "model": "'"$OLLAMA_GENERATING_MODEL"'",
   "prompt": '"$json_prompt"'
-}' | while read -r line; do
-    response=$(echo "$line" | jq -e -r '.response // empty' || continue)
-    printf '%s' "$response"
+}' | while IFS= read -r line; do
+  # If the line indicates the stream is done, break out of the loop.
+  if echo "$line" | grep -q '"done":true'; then
+    break
+  fi
+  # Extract the response text.
+  chunk=$(echo "$line" | sed -E 's/.*"response":"(.*)","done":(false|true)}.*/\1/')
+  # Replace Unicode escapes for '<' and '>' with actual characters.
+  chunk=$(echo "$chunk" | sed 's/\\u003c/</g; s/\\u003e/>/g')
+  # Print while interpreting escape sequences like \n.
+  printf "%b" "$chunk"
 done
 
 # Add final newline for readability
