@@ -20,6 +20,7 @@ SCRIPT_DIR="$(dirname "$0")"
 source "${SCRIPT_DIR}/utils/checks.sh"
 source "${SCRIPT_DIR}/utils/embeddings.sh"
 source "${SCRIPT_DIR}/utils/searching.sh"
+source "${SCRIPT_DIR}/utils/stream_printer.sh"
 
 # Check if debug mode is enabled
 DEBUG=false
@@ -110,18 +111,7 @@ curl -s -N -f -X POST "${OLLAMA_URL}/api/generate" -d '{
   "model": "'"$OLLAMA_GENERATING_MODEL"'",
   "prompt": '"$json_prompt"',
   "options": {"temperature": 0.6}
-}' | while IFS= read -r line; do
-  # If the line indicates the stream is done, break out of the loop.
-  if echo "$line" | grep -q '"done":true'; then
-    break
-  fi
-  # Extract the response text.
-  chunk=$(echo "$line" | sed -E 's/.*"response":"(.*)","done":false}.*/\1/')
-  # Replace Unicode escapes for '<', '>', and '\"' with actual characters.
-  chunk=$(echo "$chunk" | sed 's/\\u003c/</g; s/\\u003e/>/g; s/\\"/"/g')
-  # Print while interpreting escape sequences like \n.
-  printf "%b" "$chunk"
-done
+}' | print_stream_response
 
 # Add final newline for readability
 echo
