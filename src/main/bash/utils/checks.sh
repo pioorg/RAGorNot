@@ -1,5 +1,12 @@
 #!/bin/bash
 
+error_log() {
+    echo "[ERROR] $1" >&2
+    if [ ! -z "$2" ]; then
+        echo "[ERROR] Details: $2" >&2
+    fi
+}
+
 # Check required environment variables
 check_env_vars() {
     local required_vars=("$@")
@@ -28,13 +35,13 @@ test_elasticsearch() {
     fi
     debug "Elasticsearch connection successful"
 
-    # Check if search index exists
-    local index_exists=$(curl -s -k -H "Authorization: ApiKey ${ES_APIKEY}" "${ES_URL}/${SEARCH_INDEX}")
-    if echo "$index_exists" | jq -e '.error' > /dev/null; then
-        error_log "Search index ${SEARCH_INDEX} does not exist"
-        exit 1
-    fi
-    debug "Search index ${SEARCH_INDEX} exists"
+#     # Check if search index exists
+#     local index_exists=$(curl -s -k -H "Authorization: ApiKey ${ES_APIKEY}" "${ES_URL}/${SEARCH_INDEX}")
+#     if echo "$index_exists" | jq -e '.error' > /dev/null; then
+#         error_log "Search index ${SEARCH_INDEX} does not exist"
+#         exit 1
+#     fi
+#     debug "Search index ${SEARCH_INDEX} exists"
 }
 
 # Test Ollama connectivity

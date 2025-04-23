@@ -200,13 +200,6 @@ cleanup() {
     exit $exit_code
 }
 
-error_log() {
-    echo "[ERROR] $1" >&2
-    if [ ! -z "$2" ]; then
-        echo "[ERROR] Details: $2" >&2
-    fi
-}
-
 # Set up signal handling
 trap 'cleanup INT' INT
 trap 'cleanup TERM' TERM
