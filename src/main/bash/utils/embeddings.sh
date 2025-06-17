@@ -1,12 +1,12 @@
 #!/bin/bash
 
 # Load environment variables from the bash directory
-ENV_FILE="$(dirname "$(dirname "$0")")/.env"
-if [ ! -f "$ENV_FILE" ]; then
-    echo "Error: .env file not found at $ENV_FILE"
-    exit 1
-fi
-source "$ENV_FILE"
+# ENV_FILE="$(dirname "$(dirname "$0")")/.env"
+# if [ ! -f "$ENV_FILE" ]; then
+#     echo "Error: .env file not found at $ENV_FILE"
+#     exit 1
+# fi
+# source "$ENV_FILE"
 
 # Get embeddings from Ollama with retries
 get_embedding() {
