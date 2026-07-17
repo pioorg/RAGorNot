@@ -17,7 +17,6 @@
 package org.przybyl.rag.example.demos;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.jetbrains.annotations.NotNull;
 import org.przybyl.rag.example.utils.ElasticsearchConnector;
 import org.przybyl.rag.example.utils.Encoder;
 import org.przybyl.rag.example.utils.OllamaEmbeddingService;
@@ -73,7 +72,7 @@ public class RAG {
         }
     }
 
-    private static @NotNull String prepareContext(List<SearchResult> results) {
+    private static String prepareContext(List<SearchResult> results) {
         return results.stream()
             .map(SearchResult::body)
             .filter(body -> body != null && !body.isBlank())
