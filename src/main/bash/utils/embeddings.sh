@@ -47,7 +47,7 @@ error_log() {
 
 # Utility function for debug logging
 debug() {
-    if [ "${DEBUG:-false}" = "true" ]; then
+   if [ "${DEBUG:-false}" = "true" ]; then
         echo "[DEBUG] $1" >&2
     fi
 }
