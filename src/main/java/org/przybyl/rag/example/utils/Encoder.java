@@ -16,6 +16,7 @@
  */
 package org.przybyl.rag.example.utils;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -61,11 +62,13 @@ public class Encoder {
         String input
     ) {}
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     private record EncodingResponse(
         @JsonProperty("data")
         List<EmbeddingData> data
     ) {}
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     private record EmbeddingData(
         @JsonProperty("embedding")
         double[] embedding
