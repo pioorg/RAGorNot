@@ -25,21 +25,6 @@ get_embedding() {
         retry_delay=$((retry_delay * 2))
     done
 
-    error_log "Failed to get embedding after $max_retries attempts" "Text preview: ${text:0:50}..."
+    error_log "Failed to get embedding after $max_retries attempts" "Text preview: $(echo "$text" | head -c 50)..."
     return 1
-}
-
-# Utility function for error logging
-error_log() {
-    echo "[ERROR] $1" >&2
-    if [ -n "$2" ]; then
-        echo "[ERROR] Details: $2" >&2
-    fi
-}
-
-# Utility function for debug logging
-debug() {
-    if [ "${DEBUG:-false}" = "true" ]; then
-        echo "[DEBUG] $1" >&2
-    fi
 }

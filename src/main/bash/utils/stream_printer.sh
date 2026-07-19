@@ -1,23 +1,35 @@
 #!/bin/bash
 
-# Function to print streaming response from stdin
-print_stream_response() {
-  while IFS= read -r line; do
-    # If the line indicates the stream is done, break out of the loop.
-    if echo "$line" | grep -q '"done":true'; then
-      break
-    fi
-    # Extract the response text.
-    chunk=$(echo "$line" | sed -E 's/.*"response":"(.*)","done":false}.*/\1/')
-    # Replace Unicode escapes for '<', '>', and '\"' with actual characters.
-    chunk=$(echo "$chunk" | sed 's/\\u003c/</g; s/\\u003e/>/g; s/\\"/"/g')
-    # Print while interpreting escape sequences like \n.
-    printf "%b" "$chunk"
-  done
-}
+# Reads an OpenAI-compatible SSE stream from stdin and prints it.
+# Reasoning models emit thinking in reasoning_content before the answer in content.
+# Thinking is wrapped in <think>...</think> tags.
 
-# If the script is sourced, only define the function
-# If the script is run directly, read from stdin
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-  print_stream_response
+in_reasoning=false
+while IFS= read -r line; do
+    [[ "$line" != data:* ]] && continue
+    json="${line#data: }"
+    [ "$json" = "[DONE]" ] && break
+
+    reasoning=$(echo "$json" | jq -r '.choices[0].delta.reasoning_content // empty' 2>/dev/null)
+    content=$(echo "$json" | jq -r '.choices[0].delta.content // empty' 2>/dev/null)
+
+    if [ -n "$reasoning" ]; then
+        if [ "$in_reasoning" = false ]; then
+            printf "<think>"
+            in_reasoning=true
+        fi
+        printf "%s" "$reasoning"
+    fi
+
+    if [ -n "$content" ]; then
+        if [ "$in_reasoning" = true ]; then
+            printf "</think>\n"
+            in_reasoning=false
+        fi
+        printf "%s" "$content"
+    fi
+done
+
+if [ "$in_reasoning" = true ]; then
+    printf "</think>\n"
 fi

@@ -8,7 +8,7 @@ SCRIPT_DIR="$(dirname "$0")"
 source "${SCRIPT_DIR}/utils/checks.sh"
 
 # Check required environment variables
-check_env_vars "OLLAMA_URL" "OLLAMA_GENERATING_MODEL"
+check_env_vars "GENERATING_ENDPOINT" "GENERATING_MODEL"
 
 html_content=$(curl -s "https://openjdk.org/jeps/485" | pup 'div#main text{}')
 
@@ -23,17 +23,12 @@ $html_content
 ---------------------
 "
 
-echo $combined_prompt
+request_body=$(jq -n \
+    --arg model "$GENERATING_MODEL" \
+    --arg content "$combined_prompt" \
+    '{model: $model, messages: [{role: "user", content: $content}], stream: true, temperature: 0.6}')
 
-# Properly escape the combined prompt for JSON
-json_prompt=$(jq -n --arg prompt "$combined_prompt" '$prompt' || {
-    echo "Error: Failed to escape prompt for JSON"
-    exit 1
-})
-
-
-curl -s -N -f -X POST "${OLLAMA_URL}/api/generate" -d '{
-  "model": "'"$OLLAMA_GENERATING_MODEL"'",
-  "prompt": '"$json_prompt"',
-  "options": {"temperature": 0.6}
-}' | ./utils/stream_printer.sh
+curl -s -N -f -X POST "${GENERATING_ENDPOINT}" \
+    -H "Content-Type: application/json" \
+    -d "$request_body" \
+| "${SCRIPT_DIR}/utils/stream_printer.sh"

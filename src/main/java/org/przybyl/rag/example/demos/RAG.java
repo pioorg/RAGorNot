@@ -20,7 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.przybyl.rag.example.utils.ElasticsearchConnector;
 import org.przybyl.rag.example.utils.Encoder;
 import org.przybyl.rag.example.utils.OpenAIEmbeddingService;
-import org.przybyl.rag.example.utils.OllamaTextGenerationService;
+import org.przybyl.rag.example.utils.OpenAITextGenerationService;
 import org.przybyl.rag.example.utils.SearchResult;
 import org.przybyl.rag.example.utils.Searcher;
 import static org.przybyl.rag.example.demos.VectorSearch.displaySearchResults;
@@ -43,7 +43,7 @@ public class RAG {
                 new Encoder(new OpenAIEmbeddingService(), objectMapper),
                 new ElasticsearchConnector(objectMapper),
                 objectMapper);
-            var generationService = new OllamaTextGenerationService(objectMapper);
+            var generationService = new OpenAITextGenerationService(objectMapper);
 
             // Get search query from user
             System.out.print("Enter your search query: ");

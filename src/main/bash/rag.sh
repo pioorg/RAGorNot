@@ -5,14 +5,13 @@ set -euo pipefail
 
 #
 # Requirements:
-# - Docker Model Runner running with jina-embeddings-v5-text-nano-retrieval-gguf
-# - Ollama server running with the generating model
+# - Docker Model Runner running with jina-embeddings-v5-text-nano-retrieval-gguf and a generating model
 # - Elasticsearch with index containing embeddings
 # - Environment variables:
 #   EMBEDDING_ENDPOINT: Full URL of the OpenAI-compatible embeddings API
 #   EMBEDDING_MODEL: Model identifier for embeddings
-#   OLLAMA_URL: Ollama server URL (e.g., http://localhost:11434)
-#   OLLAMA_GENERATING_MODEL: Model for generating responses (e.g., deepseek-r1:14b)
+#   GENERATING_ENDPOINT: Full URL of the OpenAI-compatible chat completions API
+#   GENERATING_MODEL: Model identifier for generation (e.g., ai/deepseek-r1-distill-llama)
 #   ES_URL: Elasticsearch URL
 #   ES_APIKEY: Elasticsearch API key
 #   SEARCH_INDEX: Elasticsearch index name
@@ -22,7 +21,6 @@ SCRIPT_DIR="$(dirname "$0")"
 source "${SCRIPT_DIR}/utils/checks.sh"
 source "${SCRIPT_DIR}/utils/embeddings.sh"
 source "${SCRIPT_DIR}/utils/searching.sh"
-source "${SCRIPT_DIR}/utils/stream_printer.sh"
 
 # Check if debug mode is enabled
 DEBUG=false
@@ -34,24 +32,12 @@ for arg in "$@"; do
 done
 
 # Check required environment variables
-check_env_vars "ES_URL" "ES_APIKEY" "SEARCH_INDEX" "SEARCH_K" "SEARCH_NUM_CANDIDATES" "EMBEDDING_ENDPOINT" "EMBEDDING_MODEL" "OLLAMA_URL" "OLLAMA_GENERATING_MODEL"
+check_env_vars "ES_URL" "ES_APIKEY" "SEARCH_INDEX" "SEARCH_K" "SEARCH_NUM_CANDIDATES" "EMBEDDING_ENDPOINT" "EMBEDDING_MODEL" "GENERATING_ENDPOINT" "GENERATING_MODEL"
 
 # Test connections
 test_elasticsearch
 test_embedding_service
-
-# Check generating model is available in Ollama
-echo "Checking generating model..."
-models=$(curl -s -f "${OLLAMA_URL}/api/tags" || {
-    error_log "Failed to get models from Ollama at ${OLLAMA_URL}"
-    exit 1
-})
-if ! echo "$models" | grep -q "$OLLAMA_GENERATING_MODEL"; then
-    error_log "Generating model ${OLLAMA_GENERATING_MODEL} is not available in Ollama"
-    echo "Please pull the model using:"
-    echo "  ollama pull $OLLAMA_GENERATING_MODEL"
-    exit 1
-fi
+test_generating_service
 
 # Ask for the prompt
 echo "Enter your prompt:"
@@ -99,20 +85,18 @@ if [ "$DEBUG" = "true" ]; then
     debug "Combined prompt is: '$combined_prompt'"
 fi
 
-# Get the final response from Ollama
+# Get the final response from the generating model
 echo -e "\nGetting the answer...\n"
 
-# Properly escape the combined prompt for JSON
-json_prompt=$(jq -n --arg prompt "$combined_prompt" '$prompt' || {
-    echo "Error: Failed to escape prompt for JSON"
-    exit 1
-})
+request_body=$(jq -n \
+    --arg model "$GENERATING_MODEL" \
+    --arg content "$combined_prompt" \
+    '{model: $model, messages: [{role: "user", content: $content}], stream: true, temperature: 0.6}')
 
-curl -s -N -f -X POST "${OLLAMA_URL}/api/generate" -d '{
-  "model": "'"$OLLAMA_GENERATING_MODEL"'",
-  "prompt": '"$json_prompt"',
-  "options": {"temperature": 0.6}
-}' | print_stream_response
+curl -s -N -f -X POST "${GENERATING_ENDPOINT}" \
+    -H "Content-Type: application/json" \
+    -d "$request_body" \
+| "${SCRIPT_DIR}/utils/stream_printer.sh"
 
 # Add final newline for readability
 echo

@@ -8,11 +8,13 @@ SCRIPT_DIR="$(dirname "$0")"
 source "${SCRIPT_DIR}/utils/checks.sh"
 
 # Check required environment variables
-check_env_vars "OLLAMA_URL" "OLLAMA_GENERATING_MODEL"
+check_env_vars "GENERATING_ENDPOINT" "GENERATING_MODEL"
 
-
-curl -s -N -f -X POST "${OLLAMA_URL}/api/generate" -d '{
-  "model": "'"$OLLAMA_GENERATING_MODEL"'",
-  "prompt": "What are Stream Gatherers in Java",
-  "options": {"temperature": 0.6}
-}'  # | ./utils/stream_printer.sh
+curl -s -N -f -X POST "${GENERATING_ENDPOINT}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "'"$GENERATING_MODEL"'",
+    "messages": [{"role": "user", "content": "What are Stream Gatherers in Java"}],
+    "stream": true,
+    "temperature": 0.6
+  }'  # | ./utils/stream_printer.sh

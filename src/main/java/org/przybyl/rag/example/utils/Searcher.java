@@ -35,7 +35,7 @@ public class Searcher {
     }
 
     public List<SearchResult> search(String indexName, String query) throws IOException, InterruptedException {
-        // Convert query to embedding using Ollama
+        // Convert query to embedding
         double[] queryEmbedding = encoder.encode(query);
 
         // Create kNN search query

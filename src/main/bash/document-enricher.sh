@@ -10,11 +10,6 @@ set -e
 # fi
 # source "$ENV_FILE"
 
-# Debug function
-debug() {
-    echo "[DEBUG] $1"
-}
-
 . "$(dirname "$0")/utils/checks.sh"
 
 # Initialize

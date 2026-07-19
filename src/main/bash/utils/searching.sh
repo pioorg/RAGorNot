@@ -3,8 +3,8 @@
 # Function to perform vector search
 perform_vector_search() {
     local query_embedding="$1"
-    local k="${2:-1}"  # Default to 1 if not provided
-    local num_candidates="${3:-100}"  # Default to 100 if not provided
+    local k="${2:-1}"           # default to 1 result if not provided
+    local num_candidates="${3:-100}"  # default to 100 candidates if not provided
 
     local es_query=$(jq -n \
         --argjson vector "$query_embedding" \

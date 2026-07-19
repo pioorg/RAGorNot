@@ -9,7 +9,8 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
-# Source the embedding utilities
+# Source utility scripts
+. "$(dirname "$0")/utils/checks.sh"
 . "$(dirname "$0")/utils/embeddings.sh"
 
 # Get embedding for the provided text
