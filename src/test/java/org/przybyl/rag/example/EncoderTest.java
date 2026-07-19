@@ -93,6 +93,23 @@ class EncoderTest {
     }
 
     @Test
+    void shouldIgnoreExtraFieldsInResponse() {
+        // given — DMR returns extra fields (index, object, model, usage) alongside embedding
+        String text = "Some text";
+        String mockResponse = """
+            {"object": "list", "model": "model.gguf", "data": [{"index": 0, "object": "embedding", "embedding": [0.5, 0.6]}], "usage": {"prompt_tokens": 3, "total_tokens": 3}}
+            """;
+        Encoder encoder = new Encoder(new TestEmbeddingService(mockResponse), OBJECT_MAPPER);
+
+        // when
+        double[] result = encoder.encode(text);
+
+        // then
+        assertNotNull(result);
+        assertArrayEquals(new double[]{0.5, 0.6}, result, 0.0001);
+    }
+
+    @Test
     void shouldHandleServiceError() {
         // given
         String text = "Some text";

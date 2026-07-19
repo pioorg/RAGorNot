@@ -23,6 +23,8 @@ $html_content
 ---------------------
 "
 
+echo "$combined_prompt"
+
 request_body=$(jq -n \
     --arg model "$GENERATING_MODEL" \
     --arg content "$combined_prompt" \

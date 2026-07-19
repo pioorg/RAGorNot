@@ -15,6 +15,9 @@ set -euo pipefail
 #   ES_URL: Elasticsearch URL
 #   ES_APIKEY: Elasticsearch API key
 #   SEARCH_INDEX: Elasticsearch index name
+#
+# Usage: ./rag.sh [--debug]
+#   --debug: enable verbose debug output
 
 # Source utility scripts
 SCRIPT_DIR="$(dirname "$0")"

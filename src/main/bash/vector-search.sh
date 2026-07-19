@@ -1,4 +1,7 @@
 #!/bin/bash
+#
+# Usage: ./vector-search.sh [--debug] <query>
+#   --debug: enable verbose debug output
 
 # Source utility scripts
 SCRIPT_DIR="$(dirname "$0")"
