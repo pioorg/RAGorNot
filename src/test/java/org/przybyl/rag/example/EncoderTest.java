@@ -49,7 +49,7 @@ class EncoderTest {
         // given
         String text = "The sky is blue because of Rayleigh scattering";
         String mockResponse = """
-            {"embedding": [0.1, 0.2, 0.3, 0.4]}
+            {"data": [{"embedding": [0.1, 0.2, 0.3, 0.4]}]}
             """;
         Encoder encoder = new Encoder(new TestEmbeddingService(mockResponse), OBJECT_MAPPER);
 
@@ -67,7 +67,7 @@ class EncoderTest {
         // given
         String text = "";
         String mockResponse = """
-            {"embedding": [-0.1, 0.0, 0.1]}
+            {"data": [{"embedding": [-0.1, 0.0, 0.1]}]}
             """;
         Encoder encoder = new Encoder(new TestEmbeddingService(mockResponse), OBJECT_MAPPER);
 
@@ -84,7 +84,7 @@ class EncoderTest {
     void shouldThrowExceptionOnNullText() {
         // given
         Encoder encoder = new Encoder(new TestEmbeddingService("""
-            {"embedding": [0.1]}
+            {"data": [{"embedding": [0.1]}]}
             """), OBJECT_MAPPER);
 
         // when/then

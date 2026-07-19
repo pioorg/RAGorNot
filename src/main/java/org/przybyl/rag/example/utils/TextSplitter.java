@@ -23,7 +23,7 @@ import java.util.Locale;
 
 public class TextSplitter {
     private static final int MAX_WORDS_PER_PASSAGE =
-        Integer.parseInt(System.getenv().getOrDefault("MAX_WORDS_PER_PASSAGE", "300"));
+        Integer.parseInt(System.getenv().getOrDefault("MAX_WORDS_PER_PASSAGE", "150"));
 
     public List<String> splitIntoPassages(String text) {
         if (text == null || text.trim().isEmpty()) {

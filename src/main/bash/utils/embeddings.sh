@@ -1,30 +1,22 @@
 #!/bin/bash
 
-# Load environment variables from the bash directory
-# ENV_FILE="$(dirname "$(dirname "$0")")/.env"
-# if [ ! -f "$ENV_FILE" ]; then
-#     echo "Error: .env file not found at $ENV_FILE"
-#     exit 1
-# fi
-# source "$ENV_FILE"
-
-# Get embeddings from Ollama with retries
+# Get embeddings via the OpenAI-compatible embeddings endpoint with retries
 get_embedding() {
     local text="$1"
     local max_retries=3
-    local retry_delay=10
+    local retry_delay=2
     local attempt=1
 
     while [ $attempt -le $max_retries ]; do
-        local response=$(curl -s "${OLLAMA_URL}/api/embeddings" \
+        local response=$(curl -s --max-time 30 "${EMBEDDING_ENDPOINT}" \
             -H "Content-Type: application/json" \
             -d "{
-                \"model\": \"${OLLAMA_EMBEDDING_MODEL}\",
-                \"prompt\": $(echo "$text" | jq -R -s '.')
+                \"model\": \"${EMBEDDING_MODEL}\",
+                \"input\": $(echo "$text" | jq -R -s '.')
             }")
 
-        if [ $? -eq 0 ] && [ ! -z "$response" ] && echo "$response" | jq -e '.embedding' > /dev/null; then
-            echo "$response" | jq -c '.embedding'
+        if [ $? -eq 0 ] && [ -n "$response" ] && echo "$response" | jq -e '.data[0].embedding' > /dev/null 2>&1; then
+            echo "$response" | jq -c '.data[0].embedding'
             return 0
         fi
         debug "Embedding attempt $attempt failed, retrying in ${retry_delay}s..."
@@ -40,14 +32,14 @@ get_embedding() {
 # Utility function for error logging
 error_log() {
     echo "[ERROR] $1" >&2
-    if [ ! -z "$2" ]; then
+    if [ -n "$2" ]; then
         echo "[ERROR] Details: $2" >&2
     fi
 }
 
 # Utility function for debug logging
 debug() {
-   if [ "${DEBUG:-false}" = "true" ]; then
+    if [ "${DEBUG:-false}" = "true" ]; then
         echo "[DEBUG] $1" >&2
     fi
 }

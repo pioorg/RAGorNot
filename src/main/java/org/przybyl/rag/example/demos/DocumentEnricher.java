@@ -20,7 +20,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.przybyl.rag.example.utils.ElasticsearchConnector;
 import org.przybyl.rag.example.utils.Encoder;
-import org.przybyl.rag.example.utils.OllamaEmbeddingService;
+import org.przybyl.rag.example.utils.OpenAIEmbeddingService;
 import org.przybyl.rag.example.utils.TextSplitter;
 
 import java.io.IOException;
@@ -42,7 +42,7 @@ public class DocumentEnricher {
 
             // Create enricher
             DocumentEnricher enricher = new DocumentEnricher(
-                new Encoder(new OllamaEmbeddingService(), objectMapper),
+                new Encoder(new OpenAIEmbeddingService(), objectMapper),
                 new ElasticsearchConnector(objectMapper),
                 objectMapper,
                 new TextSplitter()
@@ -62,7 +62,7 @@ public class DocumentEnricher {
         """
             {
                 "type": "dense_vector",
-                "dims": 384
+                "dims": 768
             }""",
         "bodyChunks",
         """
@@ -75,7 +75,7 @@ public class DocumentEnricher {
                     },
                     "predictedValue": {
                         "type": "dense_vector",
-                        "dims": 384
+                        "dims": 768
                     }
                 }
               }

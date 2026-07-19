@@ -18,9 +18,9 @@ debug() {
 . "$(dirname "$0")/utils/checks.sh"
 
 # Initialize
-check_env_vars "ES_URL" "ES_APIKEY" "CRAWL_INDEX" "SEARCH_INDEX" "OLLAMA_URL" "OLLAMA_EMBEDDING_MODEL"
+check_env_vars "ES_URL" "ES_APIKEY" "CRAWL_INDEX" "SEARCH_INDEX" "EMBEDDING_ENDPOINT" "EMBEDDING_MODEL"
 test_elasticsearch
-test_ollama
+test_embedding_service
 
 # Source the embedding utilities
 . "$(dirname "$0")/utils/embeddings.sh"
@@ -131,7 +131,7 @@ create_target_index() {
             "properties": {
                 "titleEmbedding": {
                     "type": "dense_vector",
-                    "dims": 384,
+                    "dims": 768,
                     "index": true,
                     "similarity": "cosine"
                 },
@@ -143,7 +143,7 @@ create_target_index() {
                         },
                         "predictedValue": {
                             "type": "dense_vector",
-                            "dims": 384,
+                            "dims": 768,
                             "index": true,
                             "similarity": "cosine"
                         }
@@ -280,10 +280,7 @@ process_documents() {
             # Get title embedding
             local title_embedding="null"
             if [ ! -z "$title" ] && [ "$title" != "null" ]; then
-                title_embedding=$(get_embedding "$title")
-                if [ $? -ne 0 ]; then
-                    title_embedding="null"
-                fi
+                title_embedding=$(get_embedding "$title") || title_embedding="null"
             fi
 
             # Process body chunks
@@ -296,9 +293,8 @@ process_documents() {
 
                 while IFS= read -r passage; do
                     if [ ! -z "$passage" ] && [ "$passage" != "null" ]; then
-                        local passage_embedding=$(get_embedding "$passage")
-                        if [ $? -eq 0 ]; then
-                            # Escape special characters in passage
+                        local passage_embedding=""
+                        if passage_embedding=$(get_embedding "$passage") && [ -n "$passage_embedding" ]; then
                             local escaped_passage=$(echo "$passage" | jq -R -s '.')
                             if [ "$first" = true ]; then
                                 body_chunks="${body_chunks}{\"passage\":${escaped_passage},\"predictedValue\":${passage_embedding}}"
@@ -306,7 +302,26 @@ process_documents() {
                             else
                                 body_chunks="${body_chunks},{\"passage\":${escaped_passage},\"predictedValue\":${passage_embedding}}"
                             fi
-                            # Passage processed successfully
+                        else
+                            # Retry by splitting passage in half once (handles token-limit failures)
+                            local pwords=($passage)
+                            local pmid=$(( ${#pwords[@]} / 2 ))
+                            local ppart1="${pwords[*]:0:$pmid}"
+                            local ppart2="${pwords[*]:$pmid}"
+                            for ppart in "$ppart1" "$ppart2"; do
+                                if [ -n "$ppart" ]; then
+                                    local pemb=""
+                                    if pemb=$(get_embedding "$ppart") && [ -n "$pemb" ]; then
+                                        local pesc=$(echo "$ppart" | jq -R -s '.')
+                                        if [ "$first" = true ]; then
+                                            body_chunks="${body_chunks}{\"passage\":${pesc},\"predictedValue\":${pemb}}"
+                                            first=false
+                                        else
+                                            body_chunks="${body_chunks},{\"passage\":${pesc},\"predictedValue\":${pemb}}"
+                                        fi
+                                    fi
+                                fi
+                            done
                         fi
                     fi
                 done < <(echo "$sentences" | create_passages)
@@ -314,8 +329,13 @@ process_documents() {
             fi
 
             # Prepare document with embeddings using temporary files
-            jq --argjson te "$title_embedding" --argjson bc "$body_chunks" \
-                '. + {titleEmbedding: $te, bodyChunks: $bc}' "$source_file" > "$enriched_file"
+            # body_chunks can be very large (hundreds of KB for code-heavy JEPs),
+            # so write it to a file and use --slurpfile to avoid "Argument list too long"
+            local chunks_file="$tmp_dir/chunks.json"
+            echo "$body_chunks" > "$chunks_file"
+            jq --argjson te "$title_embedding" \
+                --slurpfile bc "$chunks_file" \
+                '. + {titleEmbedding: $te, bodyChunks: $bc[0]}' "$source_file" > "$enriched_file"
 
             local enriched_doc=$(cat "$enriched_file")
             rm -rf "$tmp_dir"

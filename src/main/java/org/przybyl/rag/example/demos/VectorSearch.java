@@ -19,7 +19,7 @@ package org.przybyl.rag.example.demos;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.przybyl.rag.example.utils.ElasticsearchConnector;
 import org.przybyl.rag.example.utils.Encoder;
-import org.przybyl.rag.example.utils.OllamaEmbeddingService;
+import org.przybyl.rag.example.utils.OpenAIEmbeddingService;
 import org.przybyl.rag.example.utils.SearchResult;
 import org.przybyl.rag.example.utils.Searcher;
 
@@ -35,7 +35,7 @@ public class VectorSearch {
             // Create shared ObjectMapper instance
             var objectMapper = new ObjectMapper();
             var searcher = new Searcher(
-                new Encoder(new OllamaEmbeddingService(), objectMapper),
+                new Encoder(new OpenAIEmbeddingService(), objectMapper),
                 new ElasticsearchConnector(objectMapper),
                 objectMapper);
 

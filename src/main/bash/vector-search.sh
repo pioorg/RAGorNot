@@ -16,11 +16,11 @@ for arg in "$@"; do
 done
 
 # Check required environment variables
-check_env_vars "ES_URL" "ES_APIKEY" "SEARCH_INDEX" "SEARCH_K" "SEARCH_NUM_CANDIDATES" "OLLAMA_URL" "OLLAMA_EMBEDDING_MODEL"
+check_env_vars "ES_URL" "ES_APIKEY" "SEARCH_INDEX" "SEARCH_K" "SEARCH_NUM_CANDIDATES" "EMBEDDING_ENDPOINT" "EMBEDDING_MODEL"
 
 # Test connections
 test_elasticsearch
-test_ollama
+test_embedding_service
 
 
 echo "Enter your query:"
@@ -36,9 +36,7 @@ fi
 
 # Get embedding for the query
 debug "Getting embedding for query: $query"
-query_embedding=$(get_embedding "$query")
-
-if [ $? -ne 0 ]; then
+if ! query_embedding=$(get_embedding "$query"); then
     error_log "Failed to get embedding for the query"
     exit 1
 fi

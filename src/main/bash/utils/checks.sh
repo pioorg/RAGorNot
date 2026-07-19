@@ -2,7 +2,7 @@
 
 error_log() {
     echo "[ERROR] $1" >&2
-    if [ ! -z "$2" ]; then
+    if [ -n "$2" ]; then
         echo "[ERROR] Details: $2" >&2
     fi
 }
@@ -21,7 +21,6 @@ check_env_vars() {
 
 # Test Elasticsearch connectivity
 test_elasticsearch() {
-    # Ensure API key is available
     if [ -z "$ES_APIKEY" ]; then
         error_log "ES_APIKEY environment variable is not set"
         exit 1
@@ -34,28 +33,17 @@ test_elasticsearch() {
         exit 1
     fi
     debug "Elasticsearch connection successful"
-
-#     # Check if search index exists
-#     local index_exists=$(curl -s -k -H "Authorization: ApiKey ${ES_APIKEY}" "${ES_URL}/${SEARCH_INDEX}")
-#     if echo "$index_exists" | jq -e '.error' > /dev/null; then
-#         error_log "Search index ${SEARCH_INDEX} does not exist"
-#         exit 1
-#     fi
-#     debug "Search index ${SEARCH_INDEX} exists"
 }
 
-# Test Ollama connectivity
-test_ollama() {
-    debug "Testing Ollama connectivity..."
-    local response=$(curl -s "${OLLAMA_URL}/api/embeddings" \
+# Test the embedding endpoint (OpenAI-compatible)
+test_embedding_service() {
+    debug "Testing embedding service at ${EMBEDDING_ENDPOINT}..."
+    local response=$(curl -s "${EMBEDDING_ENDPOINT}" \
         -H "Content-Type: application/json" \
-        -d "{
-            \"model\": \"${OLLAMA_EMBEDDING_MODEL}\",
-            \"prompt\": \"test\"
-        }")
-    if [ $? -ne 0 ] || [ -z "$response" ] || ! echo "$response" | jq -e '.embedding' > /dev/null; then
-        echo "Error: Cannot get embeddings from Ollama at ${OLLAMA_URL}"
+        -d "{\"model\": \"${EMBEDDING_MODEL}\", \"input\": \"test\"}")
+    if [ $? -ne 0 ] || [ -z "$response" ] || ! echo "$response" | jq -e '.data[0].embedding' > /dev/null 2>&1; then
+        error_log "Cannot get embeddings from ${EMBEDDING_ENDPOINT} using model ${EMBEDDING_MODEL}"
         exit 1
     fi
-    debug "Ollama connection successful"
+    debug "Embedding service connection successful"
 }

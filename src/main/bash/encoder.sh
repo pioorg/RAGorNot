@@ -15,9 +15,7 @@ fi
 # Get embedding for the provided text
 text="$1"
 echo "Generating embedding for text: \"$text\""
-embedding=$(get_embedding "$text")
-
-if [ $? -ne 0 ]; then
+if ! embedding=$(get_embedding "$text"); then
     echo "Error: Failed to get embedding"
     exit 1
 fi

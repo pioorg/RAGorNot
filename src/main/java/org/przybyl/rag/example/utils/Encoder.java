@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
+import java.util.List;
 
 public class Encoder {
 
@@ -30,7 +31,8 @@ public class Encoder {
     public Encoder(EmbeddingService embeddingService, ObjectMapper objectMapper) {
         this(embeddingService,
             objectMapper,
-            System.getenv().getOrDefault("OLLAMA_EMBEDDING_MODEL", "all-minilm"));
+            System.getenv().getOrDefault("EMBEDDING_MODEL",
+                "hf.co/jinaai/jina-embeddings-v5-text-nano-retrieval-gguf:Q4_K_M"));
     }
 
     public Encoder(EmbeddingService embeddingService, ObjectMapper objectMapper, String model) {
@@ -48,7 +50,7 @@ public class Encoder {
             String requestBody = objectMapper.writeValueAsString(request);
             String responseBody = embeddingService.requestEmbedding(requestBody);
             EncodingResponse response = objectMapper.readValue(responseBody, EncodingResponse.class);
-            return response.embedding();
+            return response.data().get(0).embedding();
         } catch (IOException | InterruptedException e) {
             throw new RuntimeException("Failed to encode text", e);
         }
@@ -56,13 +58,16 @@ public class Encoder {
 
     private record EncodingRequest(
         String model,
-        String prompt
-    ) {
-    }
+        String input
+    ) {}
 
     private record EncodingResponse(
+        @JsonProperty("data")
+        List<EmbeddingData> data
+    ) {}
+
+    private record EmbeddingData(
         @JsonProperty("embedding")
         double[] embedding
-    ) {
-    }
+    ) {}
 }

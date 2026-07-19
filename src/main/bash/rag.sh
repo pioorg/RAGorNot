@@ -5,12 +5,14 @@ set -euo pipefail
 
 #
 # Requirements:
-# - Ollama server running with required models
+# - Docker Model Runner running with jina-embeddings-v5-text-nano-retrieval-gguf
+# - Ollama server running with the generating model
 # - Elasticsearch with index containing embeddings
 # - Environment variables:
+#   EMBEDDING_ENDPOINT: Full URL of the OpenAI-compatible embeddings API
+#   EMBEDDING_MODEL: Model identifier for embeddings
 #   OLLAMA_URL: Ollama server URL (e.g., http://localhost:11434)
-#   OLLAMA_EMBEDDING_MODEL: Model for generating embeddings (e.g., all-minilm)
-#   OLLAMA_GENERATING_MODEL: Model for generating responses (e.g., mistral)
+#   OLLAMA_GENERATING_MODEL: Model for generating responses (e.g., deepseek-r1:14b)
 #   ES_URL: Elasticsearch URL
 #   ES_APIKEY: Elasticsearch API key
 #   SEARCH_INDEX: Elasticsearch index name
@@ -32,22 +34,21 @@ for arg in "$@"; do
 done
 
 # Check required environment variables
-check_env_vars "ES_URL" "ES_APIKEY" "SEARCH_INDEX" "SEARCH_K" "SEARCH_NUM_CANDIDATES" "OLLAMA_URL" "OLLAMA_EMBEDDING_MODEL" "OLLAMA_GENERATING_MODEL"
+check_env_vars "ES_URL" "ES_APIKEY" "SEARCH_INDEX" "SEARCH_K" "SEARCH_NUM_CANDIDATES" "EMBEDDING_ENDPOINT" "EMBEDDING_MODEL" "OLLAMA_URL" "OLLAMA_GENERATING_MODEL"
 
 # Test connections
 test_elasticsearch
-test_ollama
+test_embedding_service
 
-# Check if required models are available
-echo "Checking required models..."
+# Check generating model is available in Ollama
+echo "Checking generating model..."
 models=$(curl -s -f "${OLLAMA_URL}/api/tags" || {
-    error_log "Failed to get models from Ollama"
+    error_log "Failed to get models from Ollama at ${OLLAMA_URL}"
     exit 1
 })
-if ! (echo "$models" | grep -q "$OLLAMA_EMBEDDING_MODEL" && echo "$models" | grep -q "$OLLAMA_GENERATING_MODEL"); then
-    error_log "Required models ($OLLAMA_EMBEDDING_MODEL and $OLLAMA_GENERATING_MODEL) are not available"
-    echo "Please pull the models using:"
-    echo "  ollama pull $OLLAMA_EMBEDDING_MODEL"
+if ! echo "$models" | grep -q "$OLLAMA_GENERATING_MODEL"; then
+    error_log "Generating model ${OLLAMA_GENERATING_MODEL} is not available in Ollama"
+    echo "Please pull the model using:"
     echo "  ollama pull $OLLAMA_GENERATING_MODEL"
     exit 1
 fi
@@ -60,7 +61,7 @@ if [ -z "${prompt:-}" ]; then
     exit 1
 fi
 
-# Get vector embeddings from Ollama
+# Get vector embeddings
 echo "Getting vector embeddings..."
 query_embedding=$(get_embedding "$prompt")
 
