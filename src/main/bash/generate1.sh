@@ -10,7 +10,9 @@ source "${SCRIPT_DIR}/utils/checks.sh"
 # Check required environment variables
 check_env_vars "GENERATING_ENDPOINT" "GENERATING_MODEL"
 
-html_content=$(curl -s "https://openjdk.org/jeps/485" | pup 'div#main text{}')
+echo "Fetching the context from the Internet...."
+
+html_content=$(curl -s "https://openjdk.org/jeps/485" | xmllint --html --xpath "string(//div[@id='main'])" - 2>/dev/null)
 
 prompt="What are Stream Gatherers in Java?"
 

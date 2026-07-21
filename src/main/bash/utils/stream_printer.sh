@@ -10,23 +10,25 @@ while IFS= read -r line; do
     json="${line#data: }"
     [ "$json" = "[DONE]" ] && break
 
-    reasoning=$(echo "$json" | jq -r '.choices[0].delta.reasoning_content // empty' 2>/dev/null)
-    content=$(echo "$json" | jq -r '.choices[0].delta.content // empty' 2>/dev/null)
+    # Use | type to check presence — safe to capture with $() since "string"/"null" have no newlines.
+    # Use jq -j to print content directly (no added trailing newline), preserving \n in the model output.
+    reasoning_type=$(echo "$json" | jq -r '.choices[0].delta.reasoning_content | type' 2>/dev/null)
+    content_type=$(echo "$json" | jq -r '.choices[0].delta.content | type' 2>/dev/null)
 
-    if [ -n "$reasoning" ]; then
+    if [ "$reasoning_type" = "string" ]; then
         if [ "$in_reasoning" = false ]; then
             printf "<think>"
             in_reasoning=true
         fi
-        printf "%s" "$reasoning"
+        echo "$json" | jq -j '.choices[0].delta.reasoning_content'
     fi
 
-    if [ -n "$content" ]; then
+    if [ "$content_type" = "string" ]; then
         if [ "$in_reasoning" = true ]; then
             printf "</think>\n"
             in_reasoning=false
         fi
-        printf "%s" "$content"
+        echo "$json" | jq -j '.choices[0].delta.content'
     fi
 done
 
