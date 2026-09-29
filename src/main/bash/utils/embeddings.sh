@@ -12,7 +12,7 @@ get_embedding() {
             -H "Content-Type: application/json" \
             -d "{
                 \"model\": \"${EMBEDDING_MODEL}\",
-                \"input\": $(echo "$text" | jq -R -s '.')
+                \"input\": $(printf '%s' "$text" | jq -R -s '.')
             }")
 
         if [ $? -eq 0 ] && [ -n "$response" ] && echo "$response" | jq -e '.data[0].embedding' > /dev/null 2>&1; then

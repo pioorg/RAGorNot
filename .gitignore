@@ -46,3 +46,30 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+### AI Coding Agents ###
+.aider/
+.aider.chat.history.md
+.aider.input.history
+.amazonq/
+.amp/
+.cascade/
+.claude/
+.codex/
+.codeium/
+.continue/
+.cody/
+.copilot/
+.cursor/
+.gemini/
+.github/copilot-instructions.md
+.goose/
+.junie/
+.mentat/
+.plandex/
+.roomodes
+.clinerules
+.sourcegraph/
+.supermaven/
+.tabnine/
+.windsurf/

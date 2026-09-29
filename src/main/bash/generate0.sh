@@ -17,4 +17,4 @@ curl -s -N -f -X POST "${GENERATING_ENDPOINT}" \
     "messages": [{"role": "user", "content": "What are Stream Gatherers in Java"}],
     "stream": true,
     "temperature": 0.6
-  }'   | ./utils/stream_printer.sh
+  }'  # | ./utils/stream_printer.sh
