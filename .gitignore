@@ -19,7 +19,7 @@ buildNumber.properties
 .mvn/timing.properties
 
 ### Environment and Output Files ###
-.env
+.env*
 .output.txt
 
 ### Eclipse ###
@@ -73,3 +73,7 @@ bin/
 .supermaven/
 .tabnine/
 .windsurf/
+
+
+## other
+/src/main/bash/cast/
